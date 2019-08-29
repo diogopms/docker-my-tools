@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: diogopms-my-tools
+spec:
+  containers:
+    - name: my-docker-my-tools
+      image: docker.io/diogopms/docker-my-tools:latest
+      args:
+        - bash
+      resources:
+        requests:
+          cpu: 100m
+      stdin: true
+      stdinOnce: true
+  restartPolicy: Never

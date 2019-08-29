@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: diogopms-my-tools
+  labels:
+    app: diogopms-my-tools
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: diogopms-my-tools
+  template:
+    metadata:
+      labels:
+        app: diogopms-my-tools
+    spec:
+      containers:
+      - name: my-docker-my-tools
+        image: docker.io/diogopms/docker-my-tools:latest
+      restartPolicy: Never
