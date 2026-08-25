@@ -1,22 +1,65 @@
-FROM debian:stable-slim
-LABEL Diogo Serrano <info@diogoserrano.com>
+# Two build targets:
+#   base — slim debug toolbox (network, DB, Kafka, and Kubernetes CLI tools)
+#   ai   — base plus Node.js and the Claude Code / Codex / opencode CLIs
+#
+# BASE_IMAGE selects the OS flavor; ubuntu:24.04 (LTS) and debian:13-slim
+# are both supported — the package list below exists in both.
+ARG BASE_IMAGE=ubuntu:24.04
 
-RUN apt-get update;
-RUN apt-get -y install iputils-ping telnet postgresql redis curl htop kafkacat;
+FROM ${BASE_IMAGE} AS base
 
-RUN curl -sL https://deb.nodesource.com/setup_16.x -o /tmp/nodesource_setup.sh
-RUN chmod +x /tmp/nodesource_setup.sh
-RUN /tmp/nodesource_setup.sh
+LABEL org.opencontainers.image.source="https://github.com/diogopms/docker-my-tools" \
+      org.opencontainers.image.description="In-cluster debug toolbox: network, database, Kafka, and Kubernetes CLI tools" \
+      org.opencontainers.image.licenses="MIT"
 
-RUN apt-get -y install -y nodejs
+# Set automatically by buildx from --platform (amd64 / arm64).
+ARG TARGETARCH
+ARG KUBECTL_VERSION=1.36.4
+ARG HELM_VERSION=3.21.4
+ARG STERN_VERSION=1.34.0
 
-RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
-RUN chmod 700 get_helm.sh
-RUN ./get_helm.sh
-RUN rm get_helm.sh
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-RUN curl -sL https://storage.googleapis.com/kubernetes-release/release/v1.19.16/bin/linux/amd64/kubectl -o kubectl
-RUN chmod +x ./kubectl; mv ./kubectl /usr/local/bin/kubectl
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        dnsutils \
+        htop \
+        iputils-ping \
+        kcat \
+        postgresql-client \
+        redis-tools \
+        telnet \
+        tmux \
+    # kafkacat was renamed to kcat; keep the old name working
+    && ln -s /usr/bin/kcat /usr/local/bin/kafkacat \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN curl -sL https://github.com/wercker/stern/releases/download/1.11.0/stern_linux_amd64 -o stern_linux_amd64
-RUN chmod +x ./stern_linux_amd64; mv ./stern_linux_amd64 /usr/local/bin/stern
+RUN curl -fsSL "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/${TARGETARCH}/kubectl" \
+        -o /usr/local/bin/kubectl \
+    && chmod +x /usr/local/bin/kubectl
+
+RUN curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-${TARGETARCH}.tar.gz" \
+        | tar -xz -C /tmp \
+    && mv "/tmp/linux-${TARGETARCH}/helm" /usr/local/bin/helm \
+    && rm -rf "/tmp/linux-${TARGETARCH}"
+
+RUN curl -fsSL "https://github.com/stern/stern/releases/download/v${STERN_VERSION}/stern_${STERN_VERSION}_linux_${TARGETARCH}.tar.gz" \
+        | tar -xz -C /usr/local/bin stern
+
+CMD ["bash"]
+
+
+FROM base AS ai
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN npm install -g @anthropic-ai/claude-code @openai/codex opencode-ai \
+    && npm cache clean --force
+
+CMD ["bash"]

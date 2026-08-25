@@ -1,0 +1,94 @@
+name: CI
+
+# Verification gate. Lints the Dockerfile, builds the image (linux/amd64 only -
+# emulated arm64 builds are too slow for PR feedback; the release build covers
+# both arches), and smoke-tests the bundled tools on every pull request and on
+# every push to `main`. Merging to `main` only runs CI; it never cuts a release
+# (releases are handled separately, on a schedule, by release.yml).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - flavor: ubuntu
+            base_image: ubuntu:24.04
+          - flavor: debian
+            base_image: debian:13-slim
+    name: verify (${{ matrix.flavor }})
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Lint Dockerfile
+        uses: hadolint/hadolint-action@v3.5.0
+        with:
+          dockerfile: Dockerfile
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build base image (linux/amd64)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          target: base
+          build-args: BASE_IMAGE=${{ matrix.base_image }}
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: docker-my-tools:ci-base
+          cache-from: type=gha,scope=${{ matrix.flavor }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.flavor }}
+
+      - name: Build ai image (linux/amd64)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          target: ai
+          build-args: BASE_IMAGE=${{ matrix.base_image }}
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: docker-my-tools:ci-ai
+          cache-from: type=gha,scope=${{ matrix.flavor }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.flavor }}
+
+      - name: Smoke test base image
+        run: |
+          docker run --rm docker-my-tools:ci-base bash -euxc '
+            kubectl version --client
+            helm version
+            stern --version
+            tmux -V
+            psql --version
+            redis-cli --version
+            kcat -V
+            kafkacat -V
+            dig -v
+            ping -V
+            curl --version
+          '
+
+      - name: Smoke test ai image
+        run: |
+          docker run --rm docker-my-tools:ci-ai bash -euxc '
+            node --version
+            claude --version
+            codex --version
+            opencode --version
+            kubectl version --client
+          '

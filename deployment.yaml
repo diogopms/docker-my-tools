@@ -16,5 +16,10 @@ spec:
     spec:
       containers:
       - name: my-docker-my-tools
-        image: docker.io/diogopms/docker-my-tools:latest
-      restartPolicy: Never
+        image: ghcr.io/diogopms/docker-my-tools:latest
+        # Keep the container alive so it can be exec'd into at any time
+        command: ["sleep", "infinity"]
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
