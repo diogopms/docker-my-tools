@@ -23,6 +23,7 @@ RUN apt-get update \
         postgresql-client \
         redis-tools \
         telnet \
+        tmux \
     # kafkacat was renamed to kcat; keep the old name working
     && ln -s /usr/bin/kcat /usr/local/bin/kafkacat \
     && rm -rf /var/lib/apt/lists/*
@@ -30,6 +31,9 @@ RUN apt-get update \
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
+
+RUN npm install -g @anthropic-ai/claude-code @openai/codex opencode-ai \
+    && npm cache clean --force
 
 RUN curl -fsSL "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/${TARGETARCH}/kubectl" \
         -o /usr/local/bin/kubectl \

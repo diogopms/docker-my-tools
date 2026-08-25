@@ -49,6 +49,10 @@ jobs:
             helm version
             stern --version
             node --version
+            claude --version
+            codex --version
+            opencode --version
+            tmux -V
             psql --version
             redis-cli --version
             kcat -V

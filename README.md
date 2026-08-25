@@ -18,6 +18,10 @@ itself without installing anything on the nodes.
 | `redis-cli` (redis-tools) | Redis client |
 | `kcat` (alias `kafkacat`) | Kafka producer/consumer |
 | `node` / `npm` | Node.js runtime |
+| `claude` | Claude Code CLI |
+| `codex` | OpenAI Codex CLI |
+| `opencode` | opencode CLI |
+| `tmux` | Terminal multiplexer |
 | `curl`, `ping`, `telnet`, `dig`/`nslookup` | Network debugging |
 | `htop` | Process viewer |
 
@@ -33,21 +37,52 @@ Tags: `latest`, plus a semver cascade per release (`X.Y.Z`, `X.Y`, `X`).
 
 ## Usage
 
-Run an interactive debug shell in a cluster:
+### One-off interactive shell in a cluster
+
+The pod is created, attached to your terminal, and deleted when you exit:
 
 ```sh
-kubectl run internal-tools --restart=Never -i --tty \
+kubectl run internal-tools --rm --restart=Never -i --tty \
   --image ghcr.io/diogopms/docker-my-tools:latest -- bash
 ```
 
-Or use the provided manifests:
+### Long-running pod (keeps running, exec in when needed)
+
+Deploy it once and keep it available for troubleshooting. The included
+[`deployment.yaml`](deployment.yaml) runs `sleep infinity` so the container
+stays alive and gets rescheduled/restarted automatically if the node or pod
+dies:
+
+```sh
+kubectl apply -f deployment.yaml
+kubectl exec -it deploy/diogopms-my-tools -- bash
+```
+
+Since `tmux` is included, you can also keep sessions alive inside the pod
+across disconnects:
+
+```sh
+kubectl exec -it deploy/diogopms-my-tools -- tmux new -A -s debug
+```
+
+Deploy to a specific namespace and clean up when done:
+
+```sh
+kubectl apply -f deployment.yaml -n ops
+kubectl exec -it deploy/diogopms-my-tools -n ops -- bash
+kubectl delete -f deployment.yaml -n ops
+```
+
+### Single pod (no Deployment controller)
+
+[`pod.yaml`](pod.yaml) starts one interactive pod (not restarted if it dies):
 
 ```sh
 kubectl create -f pod.yaml
 kubectl exec -it diogopms-my-tools -- bash
 ```
 
-Run locally:
+### Run locally
 
 ```sh
 docker run --rm -it ghcr.io/diogopms/docker-my-tools:latest
