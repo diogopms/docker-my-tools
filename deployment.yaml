@@ -16,5 +16,5 @@ spec:
     spec:
       containers:
       - name: my-docker-my-tools
-        image: docker.io/diogopms/docker-my-tools:latest
+        image: ghcr.io/diogopms/docker-my-tools:latest
       restartPolicy: Never

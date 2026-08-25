@@ -1,0 +1,4 @@
+# DL3008: pinning every apt package version is not practical for a debug
+# toolbox image; the base image and tool binaries are pinned instead.
+ignored:
+  - DL3008
