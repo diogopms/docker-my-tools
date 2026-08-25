@@ -1,7 +1,12 @@
 # Two build targets:
 #   base — slim debug toolbox (network, DB, Kafka, and Kubernetes CLI tools)
 #   ai   — base plus Node.js and the Claude Code / Codex / opencode CLIs
-FROM ubuntu:24.04 AS base
+#
+# BASE_IMAGE selects the OS flavor; ubuntu:24.04 (LTS) and debian:13-slim
+# are both supported — the package list below exists in both.
+ARG BASE_IMAGE=ubuntu:24.04
+
+FROM ${BASE_IMAGE} AS base
 
 LABEL org.opencontainers.image.source="https://github.com/diogopms/docker-my-tools" \
       org.opencontainers.image.description="In-cluster debug toolbox: network, database, Kafka, and Kubernetes CLI tools" \
@@ -50,7 +55,7 @@ FROM base AS ai
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 

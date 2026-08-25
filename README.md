@@ -3,16 +3,21 @@
 [![CI](https://github.com/diogopms/docker-my-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/diogopms/docker-my-tools/actions/workflows/ci.yml)
 [![Release](https://github.com/diogopms/docker-my-tools/actions/workflows/release.yml/badge.svg)](https://github.com/diogopms/docker-my-tools/actions/workflows/release.yml)
 
-A debug toolbox image for Kubernetes clusters, based on Ubuntu LTS (24.04).
-Spin it up as a throwaway pod to troubleshoot networking, databases, Kafka,
-and the cluster itself without installing anything on the nodes.
+A debug toolbox image for Kubernetes clusters. Spin it up as a throwaway pod
+to troubleshoot networking, databases, Kafka, and the cluster itself without
+installing anything on the nodes.
 
 ## Variants
 
-| Variant | Tags | Contents |
-| --- | --- | --- |
-| **base** | `latest`, `X.Y.Z`, `X.Y`, `X` | Slim debug toolbox (tools below) |
-| **ai** | `latest-ai`, `X.Y.Z-ai`, `X.Y-ai`, `X-ai` | base + Node.js + Claude Code, Codex, and opencode CLIs |
+Two OS flavors (Ubuntu 24.04 LTS is the default; Debian 13 slim tags carry a
+`-debian` suffix) times two tool sets:
+
+| Variant | OS | Tags | Contents |
+| --- | --- | --- | --- |
+| **base** | Ubuntu 24.04 | `latest`, `X.Y.Z`, `X.Y`, `X` | Slim debug toolbox (tools below) |
+| **ai** | Ubuntu 24.04 | `latest-ai`, `X.Y.Z-ai`, `X.Y-ai`, `X-ai` | base + Node.js 24 + Claude Code, Codex, and opencode CLIs |
+| **base** | Debian 13 | `latest-debian`, `X.Y.Z-debian`, … | Same as base |
+| **ai** | Debian 13 | `latest-debian-ai`, `X.Y.Z-debian-ai`, … | Same as ai |
 
 ## Included tools
 
@@ -99,10 +104,14 @@ docker run --rm -it ghcr.io/diogopms/docker-my-tools:latest
 ```sh
 docker build --target base -t docker-my-tools .
 docker build --target ai -t docker-my-tools:ai .
+
+# Debian flavor
+docker build --target base --build-arg BASE_IMAGE=debian:13-slim -t docker-my-tools:debian .
 ```
 
 Tool versions are pinned via build args (`KUBECTL_VERSION`, `HELM_VERSION`,
-`STERN_VERSION`) and can be overridden with `--build-arg`.
+`STERN_VERSION`), and `BASE_IMAGE` selects the OS flavor (`ubuntu:24.04` or
+`debian:13-slim`); override any of them with `--build-arg`.
 
 ## CI & releases
 

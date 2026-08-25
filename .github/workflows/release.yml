@@ -86,8 +86,11 @@ jobs:
           MINOR="${VERSION#*.}"; MINOR="${MINOR%%.*}"
           {
             echo "image=$IMAGE"
+            # Ubuntu is the default flavor (unsuffixed tags); Debian gets -debian
             echo "tags_base=$IMAGE:$VERSION,$IMAGE:$MAJOR.$MINOR,$IMAGE:$MAJOR,$IMAGE:latest"
             echo "tags_ai=$IMAGE:$VERSION-ai,$IMAGE:$MAJOR.$MINOR-ai,$IMAGE:$MAJOR-ai,$IMAGE:latest-ai"
+            echo "tags_debian_base=$IMAGE:$VERSION-debian,$IMAGE:$MAJOR.$MINOR-debian,$IMAGE:$MAJOR-debian,$IMAGE:latest-debian"
+            echo "tags_debian_ai=$IMAGE:$VERSION-debian-ai,$IMAGE:$MAJOR.$MINOR-debian-ai,$IMAGE:$MAJOR-debian-ai,$IMAGE:latest-debian-ai"
           } >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
@@ -106,13 +109,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push base image
+      - name: Build and push base image (ubuntu)
         if: steps.tag.outputs.new_version
         uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
           target: base
+          build-args: BASE_IMAGE=ubuntu:24.04
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags_base }}
@@ -120,16 +124,17 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.tag.outputs.new_version }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=ubuntu
+          cache-to: type=gha,mode=max,scope=ubuntu
 
-      - name: Build and push ai image
+      - name: Build and push ai image (ubuntu)
         if: steps.tag.outputs.new_version
         uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
           target: ai
+          build-args: BASE_IMAGE=ubuntu:24.04
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags_ai }}
@@ -137,8 +142,44 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.tag.outputs.new_version }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=ubuntu
+          cache-to: type=gha,mode=max,scope=ubuntu
+
+      - name: Build and push base image (debian)
+        if: steps.tag.outputs.new_version
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          target: base
+          build-args: BASE_IMAGE=debian:13-slim
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags_debian_base }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.tag.outputs.new_version }}
+          cache-from: type=gha,scope=debian
+          cache-to: type=gha,mode=max,scope=debian
+
+      - name: Build and push ai image (debian)
+        if: steps.tag.outputs.new_version
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          target: ai
+          build-args: BASE_IMAGE=debian:13-slim
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags_debian_ai }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.tag.outputs.new_version }}
+          cache-from: type=gha,scope=debian
+          cache-to: type=gha,mode=max,scope=debian
 
       - name: Create GitHub release
         if: steps.tag.outputs.new_version
