@@ -1,4 +1,7 @@
 # DL3008: pinning every apt package version is not practical for a debug
 # toolbox image; the base image and tool binaries are pinned instead.
+# DL3016: the AI CLIs (claude-code, codex, opencode) release very frequently;
+# leaving them unpinned lets the monthly release pick up current versions.
 ignored:
   - DL3008
+  - DL3016
