@@ -30,28 +30,38 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Build image (linux/amd64)
+      - name: Build base image (linux/amd64)
         uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
+          target: base
           platforms: linux/amd64
           push: false
           load: true
-          tags: docker-my-tools:ci
+          tags: docker-my-tools:ci-base
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Smoke test bundled tools
+      - name: Build ai image (linux/amd64)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          target: ai
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: docker-my-tools:ci-ai
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test base image
         run: |
-          docker run --rm docker-my-tools:ci bash -euxc '
+          docker run --rm docker-my-tools:ci-base bash -euxc '
             kubectl version --client
             helm version
             stern --version
-            node --version
-            claude --version
-            codex --version
-            opencode --version
             tmux -V
             psql --version
             redis-cli --version
@@ -60,4 +70,14 @@ jobs:
             dig -v
             ping -V
             curl --version
+          '
+
+      - name: Smoke test ai image
+        run: |
+          docker run --rm docker-my-tools:ci-ai bash -euxc '
+            node --version
+            claude --version
+            codex --version
+            opencode --version
+            kubectl version --client
           '

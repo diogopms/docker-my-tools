@@ -86,7 +86,8 @@ jobs:
           MINOR="${VERSION#*.}"; MINOR="${MINOR%%.*}"
           {
             echo "image=$IMAGE"
-            echo "tags=$IMAGE:$VERSION,$IMAGE:$MAJOR.$MINOR,$IMAGE:$MAJOR,$IMAGE:latest"
+            echo "tags_base=$IMAGE:$VERSION,$IMAGE:$MAJOR.$MINOR,$IMAGE:$MAJOR,$IMAGE:latest"
+            echo "tags_ai=$IMAGE:$VERSION-ai,$IMAGE:$MAJOR.$MINOR-ai,$IMAGE:$MAJOR-ai,$IMAGE:latest-ai"
           } >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
@@ -105,15 +106,33 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push image
+      - name: Build and push base image
         if: steps.tag.outputs.new_version
         uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
+          target: base
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta.outputs.tags_base }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.tag.outputs.new_version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push ai image
+        if: steps.tag.outputs.new_version
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          target: ai
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags_ai }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}

@@ -3,37 +3,43 @@
 [![CI](https://github.com/diogopms/docker-my-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/diogopms/docker-my-tools/actions/workflows/ci.yml)
 [![Release](https://github.com/diogopms/docker-my-tools/actions/workflows/release.yml/badge.svg)](https://github.com/diogopms/docker-my-tools/actions/workflows/release.yml)
 
-A small Debian-based debug toolbox image for Kubernetes clusters. Spin it up as
-a throwaway pod to troubleshoot networking, databases, Kafka, and the cluster
-itself without installing anything on the nodes.
+A debug toolbox image for Kubernetes clusters, based on Ubuntu LTS (24.04).
+Spin it up as a throwaway pod to troubleshoot networking, databases, Kafka,
+and the cluster itself without installing anything on the nodes.
+
+## Variants
+
+| Variant | Tags | Contents |
+| --- | --- | --- |
+| **base** | `latest`, `X.Y.Z`, `X.Y`, `X` | Slim debug toolbox (tools below) |
+| **ai** | `latest-ai`, `X.Y.Z-ai`, `X.Y-ai`, `X-ai` | base + Node.js + Claude Code, Codex, and opencode CLIs |
 
 ## Included tools
 
-| Tool | Purpose |
-| --- | --- |
-| `kubectl` | Kubernetes CLI |
-| `helm` | Kubernetes package manager |
-| `stern` | Multi-pod log tailing |
-| `psql` (postgresql-client) | PostgreSQL client |
-| `redis-cli` (redis-tools) | Redis client |
-| `kcat` (alias `kafkacat`) | Kafka producer/consumer |
-| `node` / `npm` | Node.js runtime |
-| `claude` | Claude Code CLI |
-| `codex` | OpenAI Codex CLI |
-| `opencode` | opencode CLI |
-| `tmux` | Terminal multiplexer |
-| `curl`, `ping`, `telnet`, `dig`/`nslookup` | Network debugging |
-| `htop` | Process viewer |
+| Tool | Purpose | Variant |
+| --- | --- | --- |
+| `kubectl` | Kubernetes CLI | base |
+| `helm` | Kubernetes package manager | base |
+| `stern` | Multi-pod log tailing | base |
+| `psql` (postgresql-client) | PostgreSQL client | base |
+| `redis-cli` (redis-tools) | Redis client | base |
+| `kcat` (alias `kafkacat`) | Kafka producer/consumer | base |
+| `tmux` | Terminal multiplexer | base |
+| `curl`, `ping`, `telnet`, `dig`/`nslookup` | Network debugging | base |
+| `htop` | Process viewer | base |
+| `node` / `npm` | Node.js runtime | ai |
+| `claude` | Claude Code CLI | ai |
+| `codex` | OpenAI Codex CLI | ai |
+| `opencode` | opencode CLI | ai |
 
 ## Image
 
 Published to the GitHub Container Registry, for `linux/amd64` and `linux/arm64`:
 
 ```
-ghcr.io/diogopms/docker-my-tools
+ghcr.io/diogopms/docker-my-tools          # base
+ghcr.io/diogopms/docker-my-tools:latest-ai # ai variant
 ```
-
-Tags: `latest`, plus a semver cascade per release (`X.Y.Z`, `X.Y`, `X`).
 
 ## Usage
 
@@ -91,7 +97,8 @@ docker run --rm -it ghcr.io/diogopms/docker-my-tools:latest
 ## Building locally
 
 ```sh
-docker build -t docker-my-tools .
+docker build --target base -t docker-my-tools .
+docker build --target ai -t docker-my-tools:ai .
 ```
 
 Tool versions are pinned via build args (`KUBECTL_VERSION`, `HELM_VERSION`,
